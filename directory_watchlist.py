@@ -12,7 +12,10 @@ import pyinotify
 
 compatibleVersions = [(1,0)]
 watchPluginsDir = os.path.join(os.path.dirname(__file__), 'watch_plugins')
+testPluginsDir = os.path.join(os.path.dirname(__file__), 'test_plugins')
+notifyPluginsDir = os.path.join(os.path.dirname(__file__), 'notify_plugins')
 
+# -----------------------------------------------------------------------------
 def getPluginFilePaths(dirPath):
     fileList = os.listdir(dirPath)
     pluginFileNames = [fname for fname in fileList
@@ -22,6 +25,7 @@ def getPluginFilePaths(dirPath):
                        for fname in pluginFileNames]
     return pluginFilePaths
 
+# -----------------------------------------------------------------------------
 def getPluginModules(dirPath):
     pluginModules = []
     origPath = sys.path
@@ -39,12 +43,14 @@ def getPluginModules(dirPath):
     sys.path = origPath
     return pluginModules
 
+# -----------------------------------------------------------------------------
 def getAllDirectories():
     allDirs = []
     for module in getPluginModules(watchPluginsDir):
         allDirs += module.directoriesToWatch()
     return allDirs
 
+# -----------------------------------------------------------------------------
 def ignoreFilter(fpath):
     '''
     >>> ignoreFilter('foo.py')
@@ -57,20 +63,20 @@ def ignoreFilter(fpath):
     else:
         return False
 
+# -----------------------------------------------------------------------------
 def findTestsFor(fpath):
     '''
     >>> findTestsFor('/dev/null')
     []
     '''
-    # TODO implement a plugin system
-    import python_testfinder
     allTests = []
     if ignoreFilter(fpath):
         return allTests
-    for module in [python_testfinder]:
+    for module in getPluginModules(testPluginsDir):
         allTests += module.findTestsFor(fpath)
     return allTests
 
+# -----------------------------------------------------------------------------
 def output(*args):
     msg = ' '.join([str(x) for x in args])
     sys.stdout.write( msg + '\n' )
@@ -78,7 +84,10 @@ def output(*args):
 def notify(fpath, lineNum, summary):
     output(' * NOTIFY', fpath, lineNum, summary)
     output(' *')
+    for module in getPluginModules(notifyPluginsDir):
+        module.notify(fpath, lineNum, summary)
     
+# -----------------------------------------------------------------------------
 class EventProcessor(pyinotify.ProcessEvent):
     def process_default(self, event):
         pass #silence output
@@ -103,6 +112,7 @@ class EventProcessor(pyinotify.ProcessEvent):
                 print 'FAIL'
                 print ex
 
+# -----------------------------------------------------------------------------
 def safeloop(wm, notifier):
     notifier.start()
     watchedDirs = []
@@ -122,6 +132,7 @@ def safeloop(wm, notifier):
         # destroy the inotify's instance on this interrupt (stop monitoring)
         notifier.stop()
 
+# -----------------------------------------------------------------------------
 watchedDirs = []
 def loopCB(notifier):
     wm = notifier._watch_manager
@@ -135,6 +146,7 @@ def loopCB(notifier):
     print watchedDirs
     #time.sleep(5)
 
+# -----------------------------------------------------------------------------
 def main():
     wm = pyinotify.WatchManager()
     processor = EventProcessor()
@@ -146,6 +158,7 @@ def main():
     #notifier.loop(callback=loopCB,
                   #force_kill=True, stdout='/tmp/stdout.txt')
 
+# -----------------------------------------------------------------------------
 def test():
     import doctest
     doctest.testmod()
