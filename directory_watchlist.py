@@ -40,10 +40,8 @@ def getPluginModules(dirPath):
     return pluginModules
 
 def getAllDirectories():
-    # TODO implement a plugin system
-    import vim_watcher
     allDirs = []
-    for module in [vim_watcher] + getPluginModules(watchPluginsDir):
+    for module in getPluginModules(watchPluginsDir):
         allDirs += module.directoriesToWatch()
     return allDirs
 

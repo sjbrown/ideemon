@@ -3,6 +3,7 @@
 import os
 import subprocess
 
+pluginVersion = (1,0)
 
 def allFilesOpenedByVi():
     username = os.environ['USER']
