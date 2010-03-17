@@ -10,12 +10,40 @@ import sys
 import time
 import pyinotify
 
+compatibleVersions = [(1,0)]
+watchPluginsDir = os.path.join(os.path.dirname(__file__), 'watch_plugins')
+
+def getPluginFilePaths(dirPath):
+    fileList = os.listdir(dirPath)
+    pluginFileNames = [fname for fname in fileList
+                       if (not fname.startswith('_')
+                           and fname.endswith('.py'))]
+    pluginFilePaths = [os.path.join(dirPath, fname)
+                       for fname in pluginFileNames]
+    return pluginFilePaths
+
+def getPluginModules(dirPath):
+    pluginModules = []
+    origPath = sys.path
+    sys.path.insert(0, dirPath) #insert, not append: users can override std modules
+    for fpath in getPluginFilePaths(dirPath):
+        dirName = os.path.dirname(fpath)
+        baseName = os.path.basename(fpath)
+        modName = baseName.rsplit('.py', 1)[0]
+        module = __import__(modName, globals(), locals(), level=0)
+        if (hasattr(module, 'pluginVersion')
+            and module.pluginVersion in compatibleVersions):
+            pluginModules.append(module)
+        else:
+            print ('Could not load plugin module %s' % str(module))
+    sys.path = origPath
+    return pluginModules
+
 def getAllDirectories():
     # TODO implement a plugin system
     import vim_watcher
-    import directory_list
     allDirs = []
-    for module in [vim_watcher, directory_list]:
+    for module in [vim_watcher] + getPluginModules(watchPluginsDir):
         allDirs += module.directoriesToWatch()
     return allDirs
 

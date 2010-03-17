@@ -1,6 +1,9 @@
 #! /usr/bin/python
 
 import os
+
+pluginVersion = (1,0)
+
 hardcoded_list = '''\
 /a/work/catan
 '''
