@@ -8,6 +8,8 @@ import sys
 import doctest
 import subprocess
 
+pluginVersion = (1,0)
+
 def log_error(*args):
     msg = ' '.join([str(x) for x in args]) + '\n'
     sys.stderr.write(msg)
@@ -71,9 +73,22 @@ def doctestFn(*args, **kwargs):
 
 
 def findTestsFor(fpath):
+    '''Find tests for python files. Should return at least a pylint
+    test.  Also returns a doctest test if the file has a comment
+    line that looks like "# autotest: doctest"
+
+    >>> findTestsFor('/dev/null')
+    []
+    '''
     tests = []
 
-    if os.path.getsize(fpath) > 100*1024: #bigger than 100KiB
+    try:
+        fileSize = os.path.getsize(fpath)
+    except OSError, ex:
+        log_error('could not get file size', fpath, ex)
+        return tests
+
+    if fileSize > 100*1024: #bigger than 100KiB
         log_error('file too big', fpath)
         return tests
     try:
@@ -107,7 +122,14 @@ def findTestsFor(fpath):
 
 
 def main():
-    for t in findTestsFor('/a/vmwork/shaved_weasel/boot_cmdline.py'):
+    os_py = os.__file__.replace('pyc', 'py')
+    print os_py
+    for t in findTestsFor(os_py):
+        print t
+
+    thismodule_py = __file__.replace('pyc', 'py')
+    print thismodule_py
+    for t in findTestsFor(thismodule_py):
         print t
 
 if __name__ == '__main__':

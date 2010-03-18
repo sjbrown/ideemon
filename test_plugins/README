@@ -1,0 +1,31 @@
+
+These plugins are responsible for providing tests.
+
+The tests will get run against the just-written file.
+
+
+
+API:
+----
+
+plugins must have the following:
+
+A module-level attribute "pluginVersion" that has a compatible
+version for ideemon
+
+pluginVersion = (1,0)
+
+
+A function called "findTestsFor" that takes one argument: the full
+path to the file to be tested.  This function must return a 
+(possibly empty) list of tuples.  The tuples each represent a test
+to be run.  This is an important detail; the plugin does not run 
+the test itself, it just returns a test.  The tuple is of the
+form ( test_function, args, kwargs ).  The args and kwargs will be
+passed to the test_function in the conventional way,
+test_function( *args, **kwargs )
+
+def findTestsFor(fpath):
+    ...
+    return [ (myTestFn, (arg1, arg2,), {'foo':1, 'bar':2}),
+             ... ]
