@@ -1,0 +1,24 @@
+
+These plugins are responsible for dispatching notifications
+about the results of tests.
+
+
+
+API:
+----
+
+plugins must have the following:
+
+A module-level attribute "pluginVersion" that has a compatible
+version for ideemon
+
+pluginVersion = (1,0)
+
+
+A function called "notify" that takes 3 arguments:
+ - the full path to the file the test was run against
+ - the relevant line number of the test (None if not applicable)
+ - a summary string, with relevant information about the test
+
+def notify(fpath, lineNum, summary):
+    ...

@@ -1,0 +1,26 @@
+
+These plugins are responsible for telling the main loop
+which directories to watch for changes.
+
+
+
+API:
+----
+
+plugins must have the following:
+
+A module-level attribute "pluginVersion" that has a compatible
+version for ideemon
+
+pluginVersion = (1,0)
+
+
+A function called "directoriesToWatch" that returns a (possibly
+empty) list of full directory paths.
+
+def directoriesToWatch():
+    dirs = []
+    ...
+    # populate dirs
+    ...
+    return dirs
