@@ -18,22 +18,25 @@ def allFilesOpenedByVi():
 
     p = subprocess.Popen(cmd, shell=True,
                          stdout=subprocess.PIPE,
+                         stderr=open('/dev/null', 'w'),
                          )
 
     for line in p.stdout:
         line = line.strip()
-        if line.endswith('.swp'):
-            swp_fpath = line.rsplit(' ', 1)[1]
-            fpath = swp_fpath.rsplit('.swp')[0]
-            head, tail = fpath.rsplit('/', 1)
-            tail = tail.split('.', 1)[1]
-            fpath = head +'/'+ tail
+        if '.swp' in line:
+            # At this point, line looks like "vi  1234  username  1 REG  /foo/bar/.baz.py.swp"
+            fpath = line.rsplit('.swp')[0] # "vi  1234  username  1 REG  /foo/bar/.baz.py"
+            fpath = '/' + fpath.split('/', 1)[1] #                      "/foo/bar/.baz.py"
+            head, tail = fpath.rsplit('/', 1)    #                      "/foo/bar", ".baz.py"
+            tail = tail.split('.', 1)[1]         #                      "/foo/bar", "baz.py"
+            fpath = head +'/'+ tail              #                      "/foo/bar/baz.py"
             yield fpath
 
 def directoriesToWatch():
     directories = set()
     for fpath in allFilesOpenedByVi():
         directories.add( os.path.dirname(fpath) )
+    print directories
     return list(directories)
 
 def main():
