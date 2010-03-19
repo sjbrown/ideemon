@@ -17,7 +17,6 @@ def allFilesOpenedByVi():
     cmd = 'lsof' + args
 
     p = subprocess.Popen(cmd, shell=True,
-                         stderr=subprocess.PIPE,
                          stdout=subprocess.PIPE,
                          )
 
