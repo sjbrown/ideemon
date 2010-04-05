@@ -2,6 +2,9 @@
 
 import os
 import subprocess
+import logging
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger()
 
 pluginVersion = (1,0)
 
@@ -24,13 +27,16 @@ def allFilesOpenedByVi():
     for line in p.stdout:
         line = line.strip()
         if '.swp' in line:
-            # At this point, line looks like "vi  1234  username  1 REG  /foo/bar/.baz.py.swp"
-            fpath = line.rsplit('.swp')[0] # "vi  1234  username  1 REG  /foo/bar/.baz.py"
-            fpath = '/' + fpath.split('/', 1)[1] #                      "/foo/bar/.baz.py"
-            head, tail = fpath.rsplit('/', 1)    #                      "/foo/bar", ".baz.py"
-            tail = tail.split('.', 1)[1]         #                      "/foo/bar", "baz.py"
-            fpath = head +'/'+ tail              #                      "/foo/bar/baz.py"
-            yield fpath
+            try:
+                # At this point, line looks like "vi  1234  username  1 REG  /foo/bar/.baz.py.swp"
+                fpath = line.rsplit('.swp')[0] # "vi  1234  username  1 REG  /foo/bar/.baz.py"
+                fpath = '/' + fpath.split('/', 1)[1] #                      "/foo/bar/.baz.py"
+                head, tail = fpath.rsplit('/', 1)    #                      "/foo/bar", ".baz.py"
+                tail = tail.split('.', 1)[1]         #                      "/foo/bar", "baz.py"
+                fpath = head +'/'+ tail              #                      "/foo/bar/baz.py"
+                yield fpath
+            except Exception, ex:
+                log.error(str(ex))
 
 def directoriesToWatch():
     directories = set()

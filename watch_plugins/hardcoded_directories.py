@@ -1,6 +1,9 @@
-#! /usr/bin/python
+#! /usr/bin/env python
 
 import os
+import logging
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger()
 
 pluginVersion = (1,0)
 
@@ -9,15 +12,15 @@ hardcoded_list = '''\
 '''
 
 def directoriesToWatch():
-    l = hardcoded_list.strip()
-    l = l.split('\n')
+    hlist = hardcoded_list.strip()
+    hlist = hlist.split('\n')
     dirs = []
-    for l in l:
+    for l in hlist:
         d = l.strip()
         if os.path.isdir(d):
             dirs.append(d)
         else:
-            print 'Directory "%s" does not exist' % d
+            log.warn('Directory "%s" does not exist' % d)
     return dirs
 
 def main():
