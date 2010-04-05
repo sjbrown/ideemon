@@ -42,7 +42,7 @@ def directoriesToWatch():
     directories = set()
     for fpath in allFilesOpenedByVi():
         directories.add( os.path.dirname(fpath) )
-    print directories
+    log.info('Directories watched from vim: %s' % directories)
     return list(directories)
 
 def main():
