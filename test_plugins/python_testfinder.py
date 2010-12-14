@@ -5,7 +5,6 @@
 import os
 import re
 import sys
-import doctest
 import subprocess
 
 pluginVersion = (1,0)
@@ -13,11 +12,6 @@ pluginVersion = (1,0)
 def log_error(*args):
     msg = ' '.join([str(x) for x in args]) + '\n'
     sys.stderr.write(msg)
-
-# pattern to match lines like: # autotest: doctest
-doctestPattern = re.compile(r'^\s*#\s*autotest\s*:\s*(.*)')
-
-doctestErrorPattern = re.compile(r'^File .*line (\d+),')
 
 pylintErrorPattern = re.compile(r':(\d+):(.*)')
 
@@ -44,38 +38,9 @@ def pylintTestFn(*args, **kwargs):
             errors.append( (fpath, lineNum, summary) )
     return errors
 
-def doctestFn(*args, **kwargs):
-    '''run doctest.testmod on the module
-    If there are no errors, return None
-    If there are errors, return a list of (filepath, lineNumber, errorSummary)
-    '''
-
-    #doctest is run in a subprocess for isolation.
-    fpath = args[0]
-    cmd = 'python -m doctest %s' % fpath
-
-    p = subprocess.Popen(cmd, shell=True,
-                         stderr=subprocess.PIPE,
-                         stdout=subprocess.PIPE,
-                         )
-
-    output = p.stdout.read(100*1024) # read 100KiB
-    print output
-    errors = []
-    for line in output.splitlines():
-        m = doctestErrorPattern.search(line)
-        if m:
-            lineNum = m.group(1)
-            errors.append((fpath, lineNum, 'doctest failed'))
-            break
-
-    return errors
-
-
 def findTestsFor(fpath):
     '''Find tests for python files. Should return at least a pylint
-    test.  Also returns a doctest test if the file has a comment
-    line that looks like "# autotest: doctest"
+    test.
 
     >>> findTestsFor('/dev/null')
     []
@@ -108,13 +73,6 @@ def findTestsFor(fpath):
     if not (fpath.endswith('.py')
         or (firstline.startswith('#!') and 'python' in firstline)):
         return tests
-
-    for line in lines:
-        if doctestPattern.search(line):
-            print 'found doctest pattern', line
-            #            function  args     kwargs
-            tests.append((doctestFn, (fpath,), dict()))
-            break
 
     tests.append((pylintTestFn, (fpath,), dict()))
 
