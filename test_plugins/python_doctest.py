@@ -84,7 +84,7 @@ def testfileFn(srcPath, testPath, **kwargs):
         m = doctestErrorPattern.search(line)
         if m:
             lineNum = m.group(1)
-            errors.append((fpath, lineNum, 'testfile doctest failed'))
+            errors.append((srcPath, lineNum, 'testfile doctest failed'))
             break
 
     return errors
@@ -123,22 +123,22 @@ def findTestsFor(fpath):
         or (firstline.startswith('#!') and 'python' in firstline)):
         return []
 
-    #tests = findDoctestsFor(lines) + findTestfileTestsFor(fpath, lines)
-    tests = findTestfileTestsFor(fpath, lines)
+    tests = findDoctestsFor(fpath, lines) + findTestfileTestsFor(fpath, lines)
+    #tests = findTestfileTestsFor(fpath, lines)
     return tests
 
-def findDoctestsFor(lines):
+def findDoctestsFor(fpath, lines):
     '''Returns a doctest test if the file has a comment line that
     looks like "# autotest: doctest"
 
-    >>> findDoctestsFor('/dev/null')
+    >>> findDoctestsFor('/dev/null', [])
     []
     '''
     tests = []
 
     for line in lines:
         if simpleDoctestPattern.search(line):
-            print 'found doctest pattern', line
+            #print 'found doctest pattern', line
             #            function    args     kwargs
             tests.append((doctestFn, (fpath,), dict()))
             break
@@ -149,7 +149,7 @@ def findTestfileTestsFor(fpath, lines):
     '''Returns a doctest test if the file has a comment line that
     looks like "# autotest: doctest.testfile:test/foo.doctest"
 
-    >>> findTestfileTestsFor('/dev/null')
+    >>> findTestfileTestsFor('/dev/null', [])
     []
     '''
     tests = []
@@ -157,11 +157,11 @@ def findTestfileTestsFor(fpath, lines):
     for line in lines:
         match = testfilePattern.search(line)
         if match:
+            #print 'found testfile pattern', line
             relativeTestPath = match.group(1).strip()
             srcDirname = os.path.dirname(fpath)
             testPath = os.path.join(srcDirname, relativeTestPath)
 
-            print 'found testfile pattern', line
             #            function     args              kwargs
             tests.append((testfileFn, (fpath,testPath), dict()))
             break
