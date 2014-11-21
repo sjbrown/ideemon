@@ -19,7 +19,7 @@ def pylintTestFn(*args, **kwargs):
     '''run pylint on the module
     '''
     fpath = args[0]
-    cmd = 'pylint --errors-only --output-format=parseable %s' % fpath
+    cmd = 'pylint --errors-only --msg-template="{path}:{line}: [{obj}] {msg}" %s' % fpath
 
     p = subprocess.Popen(cmd, shell=True,
                          stderr=subprocess.PIPE,
