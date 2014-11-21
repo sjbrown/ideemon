@@ -154,23 +154,23 @@ class EventProcessor(pyinotify.ProcessEvent):
 # -----------------------------------------------------------------------------
 def safeloop(wm, notifier):
     notifier.start()
-    watchedDirs = {}
+    watched_dirs = {}
     try:
         while True:
-            newDirs = getAllDirectories()
-            newDirs = Accountant.filterDirs(watchedDirs.keys(), newDirs)
-            for d in newDirs:
-                if d in watchedDirs:
+            new_dirs = getAllDirectories()
+            new_dirs = Accountant.filterDirs(watched_dirs.keys(), new_dirs)
+            for d in new_dirs:
+                if d in watched_dirs:
                     continue
                 log.info('adding '+ d)
                 retval =  wm.add_watch(d, pyinotify.ALL_EVENTS)
-                watchedDirs.update(retval)
-            log.info('watched dirs: ' + str(watchedDirs))
+                watched_dirs.update(retval)
+            log.info('watched dirs: ' + str(watched_dirs))
             time.sleep(INTERVAL_SECS)
-            for k, v in watchedDirs.items():
-                if k not in newDirs:
+            for k, v in watched_dirs.items():
+                if k not in new_dirs:
                     wm.rm_watch(v)
-                    del watchedDirs[k]
+                    del watched_dirs[k]
 
     finally:
         # destroy the inotify's instance on this interrupt (stop monitoring)
