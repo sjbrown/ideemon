@@ -114,7 +114,7 @@ def findTestfileTestsFor(fpath, lines):
     '''Returns a unittest test file if the inspected file has a comment line 
     that looks like "# autotest: unittest.testfile:tests/test_modname.py"
 
-    >>> findTestfileTestsFor('/dev/null')
+    >>> findTestfileTestsFor('/dev/null', [])
     []
     '''
     tests = []
