@@ -31,6 +31,9 @@ def pylintTestFn(*args, **kwargs):
     print 'pylint stderr', p.stderr.read()
     errors = []
     for line in output.splitlines():
+        if 'but some types could not be inferred' in line:
+            # these messages are very often spurious
+            continue
         m = pylintErrorPattern.search(line)
         if m:
             lineNum = m.group(1)
