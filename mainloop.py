@@ -116,11 +116,11 @@ class Accountant:
             dirlist.append(d)
         for d in set(oldDirs):
             if cls.filesProcessed[d] > 10:
-                log.warn('directory', d, 'is too busy')
+                log.warn('directory '+ d +' is too busy')
                 continue
             cls.lastTouch[d] += 1
             if cls.lastTouch[d] > 60/INTERVAL_SECS:
-                log.info('directory', d, 'older than 60 secs')
+                log.info('directory '+ d+ ' older than 60 secs')
                 continue
             dirlist.append(d)
         cls.filesProcessed.clear()
