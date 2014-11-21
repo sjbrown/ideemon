@@ -5,7 +5,8 @@
 import os
 import re
 import sys
-import subprocess
+
+from functools import partial
 
 pluginVersion = (1,0)
 
@@ -15,20 +16,13 @@ def log_error(*args):
 
 pylintErrorPattern = re.compile(r':(\d+):(.*)')
 
-def pylintTestFn(*args, **kwargs):
+def pylintTestFn(fpath, **kwargs):
     '''run pylint on the module
     '''
-    fpath = args[0]
     cmd = 'pylint --errors-only --msg-template="{path}:{line}: [{obj}] {msg}" %s' % fpath
+    return cmd
 
-    p = subprocess.Popen(cmd, shell=True,
-                         stderr=subprocess.PIPE,
-                         stdout=subprocess.PIPE,
-                         )
-
-    output = p.stdout.read(100*1024) # read 100KiB
-    print 'pylint output', output
-    print 'pylint stderr', p.stderr.read()
+def make_report(fpath, output, errput):
     errors = []
     for line in output.splitlines():
         if 'but some types could not be inferred' in line:
@@ -77,7 +71,8 @@ def findTestsFor(fpath):
         or (firstline.startswith('#!') and 'python' in firstline)):
         return tests
 
-    tests.append((pylintTestFn, (fpath,), dict()))
+    report_fn = partial(make_report, fpath)
+    tests.append((pylintTestFn, (fpath,), dict(), report_fn))
 
     return tests
 

@@ -1,0 +1,26 @@
+
+These plugins are responsible for telling the main loop
+how to set up special environments for running tests
+
+
+
+API:
+----
+
+plugins must have the following:
+
+A module-level attribute "pluginVersion" that has a compatible
+version for ideemon
+
+pluginVersion = (1,0)
+
+A module-level function "find_environment(spec)" that returns
+a Context Manager for a given environment spec.  The spec is
+just a string.  If your plugin doesn't recognize it, that's
+fine, just return None.  Try not to collide with any other
+plugins' specs.
+
+def find_environment(spec):
+    if spec == 'subprocess':
+        return context
+

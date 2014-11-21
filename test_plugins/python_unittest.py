@@ -6,7 +6,6 @@
 import os
 import re
 import sys
-import subprocess
 
 pluginVersion = (1,0)
 
@@ -29,35 +28,17 @@ def testfileFn(srcPath, testPath, **kwargs):
     If there are no errors, return None
     If there are errors, return a list of (filepath, lineNumber, errorSummary)
     '''
-
-    #run in a subprocess for isolation.
     srcDirname = os.path.dirname(srcPath)
 
     cmd = 'python '+ testPath
-    print 'cmd', cmd
+    return cmd
 
-    p = subprocess.Popen(cmd, shell=True,
-                         stderr=subprocess.PIPE,
-                         stdout=subprocess.PIPE,
-                         )
 
-    print '       NO OUTPUT YET'
-    stdout, stderr = p.communicate()
-    print '       NO OUTPUT YET'
-    try:
-        errput = p.stderr.read(100*1024) # read 100KiB
-    except Exception, e:
-        errput = ''
-    try:
-        output = p.stdout.read(100*1024) # read 100KiB
-    except Exception, e:
-        output = ''
-    #print 'output:\n', output
-    #print 'errput:\n', errput
+def make_report(output, errput):
     errors = []
-    lines = iter(stderr.splitlines())
+    lines = iter(errput.splitlines())
 
-    print 'lines:\n', '\n'.join(stderr.splitlines())
+    print 'lines:\n', '\n'.join(errput.splitlines())
 
     for line in lines:
         print line
@@ -127,8 +108,8 @@ def findTestfileTestsFor(fpath, lines):
             testPath = os.path.join(srcDirname, relativeTestPath)
 
             print 'found testfile pattern', line
-            #            function     args              kwargs
-            tests.append((testfileFn, (fpath,testPath), dict()))
+            #            function     args              kwargs  report fn
+            tests.append((testfileFn, (fpath,testPath), dict(), make_report))
             break
         match = testfileShortPattern.search(line)
         if match:
@@ -138,8 +119,8 @@ def findTestfileTestsFor(fpath, lines):
 
             testPath = os.path.join(srcDirname, relativeTestPath)
             print 'found testfile pattern', line
-            #            function     args              kwargs
-            tests.append((testfileFn, (fpath,testPath), dict()))
+            #            function     args              kwargs  report fn
+            tests.append((testfileFn, (fpath,testPath), dict(), make_report))
             break
 
 

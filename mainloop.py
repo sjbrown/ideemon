@@ -17,9 +17,11 @@ log = logging.getLogger()
 INTERVAL_SECS = 6
 
 compatibleVersions = [(1,0)]
-watchPluginsDir = os.path.join(os.path.dirname(__file__), 'watch_plugins')
-testPluginsDir = os.path.join(os.path.dirname(__file__), 'test_plugins')
-notifyPluginsDir = os.path.join(os.path.dirname(__file__), 'notify_plugins')
+THIS_DIR = os.path.dirname(__file__)
+watchPluginsDir = os.path.join(THIS_DIR, 'watch_plugins')
+testPluginsDir = os.path.join(THIS_DIR, 'test_plugins')
+notifyPluginsDir = os.path.join(THIS_DIR, 'notify_plugins')
+environment_plugins_dir = os.path.join(THIS_DIR, 'environment_plugins')
 
 # -----------------------------------------------------------------------------
 def getPluginFilePaths(dirPath):
@@ -127,6 +129,17 @@ class Accountant:
         return dirlist
 
 # -----------------------------------------------------------------------------
+def find_environment_for(test_spec):
+    # default to subprocess environment for isolation
+    env_spec = test_spec.get('env', 'subprocess')
+    all_envs = []
+    for module in getPluginModules(environment_plugins_dir):
+        all_envs += [module.find_environment(env_spec)]
+    if len(all_envs) > 1:
+        log.error('MORE THAN ONE ENVIRONMENT FOUND %s', all_envs)
+    return all_envs[0]
+
+# -----------------------------------------------------------------------------
 class EventProcessor(pyinotify.ProcessEvent):
     def process_default(self, event):
         pass #silence output
@@ -135,18 +148,31 @@ class EventProcessor(pyinotify.ProcessEvent):
         dirName = os.path.dirname(event.pathname)
         Accountant.filesProcessed[dirName] += 1
         for testTuple in tests:
+            # TODO: REMOVE
+            test_spec = {}
+            environment = find_environment_for(test_spec)
             testFn = testTuple[0]
+
             if len(testTuple) > 1:
                 testArgs = testTuple[1]
             else:
                 testArgs = ()
+
             if len(testTuple) > 2:
                 testKwargs = testTuple[2]
             else:
                 testKwargs = {}
+
+            if len(testTuple) > 3:
+                report_fn = testTuple[3]
+            else:
+                report_fn = lambda x,y: ['report: ' + x[:50] + '...']
+
             try:
-                errors = testFn(*testArgs, **testKwargs)
-                notify(errors)
+                with environment() as env:
+                    output, errput = env.run(testFn, *testArgs, **testKwargs)
+                    report = report_fn(output, errput)
+                    notify(report)
             except Exception, ex:
                 print 'FAIL'
                 print ex

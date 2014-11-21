@@ -6,7 +6,8 @@ import os
 import re
 import sys
 import doctest
-import subprocess
+
+from functools import partial
 
 pluginVersion = (1,0)
 
@@ -25,40 +26,21 @@ testfilePattern = re.compile(prefix + r'doctest\.testfile\s*:(.*)',
 doctestErrorPattern = re.compile(r'^File .*line (\d+),')
 
 
-def doctestFn(*args, **kwargs):
+def make_doctest_cmd(fpath, **kwargs):
     '''run doctest.testmod on the module
     If there are no errors, return None
     If there are errors, return a list of (filepath, lineNumber, errorSummary)
     '''
-
-    #doctest is run in a subprocess for isolation.
-    fpath = args[0]
     cmd = 'python -m doctest %s' % fpath
+    return cmd
 
-    p = subprocess.Popen(cmd, shell=True,
-                         stderr=subprocess.PIPE,
-                         stdout=subprocess.PIPE,
-                         )
 
-    output = p.stdout.read(100*1024) # read 100KiB
-    print output
-    errors = []
-    for line in output.splitlines():
-        m = doctestErrorPattern.search(line)
-        if m:
-            lineNum = m.group(1)
-            errors.append((fpath, lineNum, 'doctest failed'))
-            break
-
-    return errors
-
-def testfileFn(srcPath, testPath, **kwargs):
+def make_testfile_cmd(srcPath, testPath, **kwargs):
     '''run doctest.testfile on the testfile
     If there are no errors, return None
     If there are errors, return a list of (filepath, lineNumber, errorSummary)
     '''
 
-    #doctest is run in a subprocess for isolation.
     srcDirname = os.path.dirname(srcPath)
     script = ('import doctest'
               ';import sys'
@@ -68,23 +50,22 @@ def testfileFn(srcPath, testPath, **kwargs):
 
     cmd = 'python', '-c', script
     print 'cmd', cmd
+    return cmd
 
-    p = subprocess.Popen(cmd, shell=True,
-                         stderr=subprocess.PIPE,
-                         stdout=subprocess.PIPE,
-                         )
 
-    print '       NO OUTPUT YET'
-    p.communicate()
-    print '       NO OUTPUT YET'
-    output = p.stdout.read(100*1024) # read 100KiB
-    print 'output:\n', output
+def make_report(fpath, msg, output, errput):
+    lines = iter(output.splitlines())
     errors = []
-    for line in output.splitlines():
+    for line in lines:
         m = doctestErrorPattern.search(line)
         if m:
             lineNum = m.group(1)
-            errors.append((srcPath, lineNum, 'testfile doctest failed'))
+            try:
+                [lines.next() for x in range(5)] # skip 5 lines forward
+                msg += '  Got "%s"' % lines.next().strip()
+            except:
+                pass
+            errors.append((fpath, lineNum, msg))
             break
 
     return errors
@@ -96,6 +77,7 @@ def findTestsFor(fpath):
 
     >>> findTestsFor('/dev/null')
     []
+
     '''
     try:
         fileSize = os.path.getsize(fpath)
@@ -124,8 +106,8 @@ def findTestsFor(fpath):
         return []
 
     tests = findDoctestsFor(fpath, lines) + findTestfileTestsFor(fpath, lines)
-    #tests = findTestfileTestsFor(fpath, lines)
     return tests
+
 
 def findDoctestsFor(fpath, lines):
     '''Returns a doctest test if the file has a comment line that
@@ -139,11 +121,13 @@ def findDoctestsFor(fpath, lines):
     for line in lines:
         if simpleDoctestPattern.search(line):
             #print 'found doctest pattern', line
-            #            function    args     kwargs
-            tests.append((doctestFn, (fpath,), dict()))
+            report_fn = partial(make_report, fpath, 'doctest failed')
+            #            function           args     kwargs   report fn
+            tests.append((make_doctest_cmd, (fpath,), dict(), report_fn))
             break
 
     return tests
+
 
 def findTestfileTestsFor(fpath, lines):
     '''Returns a doctest test if the file has a comment line that
@@ -162,8 +146,9 @@ def findTestfileTestsFor(fpath, lines):
             srcDirname = os.path.dirname(fpath)
             testPath = os.path.join(srcDirname, relativeTestPath)
 
-            #            function     args              kwargs
-            tests.append((testfileFn, (fpath,testPath), dict()))
+            report_fn = partial(make_report, 'doctest testfile failed')
+            #            function            args              kwargs  report fn
+            tests.append((make_testfile_cmd, (fpath,testPath), dict(), report_fn))
             break
 
     return tests
