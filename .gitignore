@@ -1,0 +1,9 @@
+*~
+.sw[op]
+*.py[co]
+.*.sw[op]
+
+*.o
+*.la
+*.lo
+*.so
