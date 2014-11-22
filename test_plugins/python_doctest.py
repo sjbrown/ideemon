@@ -17,11 +17,13 @@ def log_error(*args):
 
 # pattern to match lines like: # autotest: doctest
 prefix = r'^\s*#\s*autotest\s*:\s*'
-simpleDoctestPattern = re.compile(prefix + r'doctest\s*$',
+simpleDoctestPattern = re.compile(prefix + r'doctest\b',
                                   re.IGNORECASE)
 # pattern to match lines like: # autotest: doctest.testfile:test/foo.doctest
 testfilePattern = re.compile(prefix + r'doctest\.testfile\s*:(.*)',
                                   re.IGNORECASE)
+
+env_spec_pattern = re.compile(r'env:(.+)\b', re.IGNORECASE)
 
 doctestErrorPattern = re.compile(r'^File .*line (\d+),')
 
@@ -117,16 +119,27 @@ def findDoctestsFor(fpath, lines):
     []
     '''
     tests = []
+    test_specs = []
 
     for line in lines:
         if simpleDoctestPattern.search(line):
-            #print 'found doctest pattern', line
             report_fn = partial(make_report, fpath, 'doctest failed.')
-            #            function           args     kwargs   report fn
+
+            test_spec = {'make_cmd_fn': make_doctest_cmd,
+                         'args': (fpath,),
+                         'kwargs': {},
+                         'report_fn': report_fn,
+                        }
+
+            env_spec_match = env_spec_pattern.search(line)
+            if env_spec_match:
+                test_spec['env'] = env_spec_match.group(1)
+
+            test_specs.append(test_spec)
             tests.append((make_doctest_cmd, (fpath,), dict(), report_fn))
             break
 
-    return tests
+    return test_specs
 
 
 def findTestfileTestsFor(fpath, lines):
@@ -137,6 +150,7 @@ def findTestfileTestsFor(fpath, lines):
     []
     '''
     tests = []
+    test_specs = []
 
     for line in lines:
         match = testfilePattern.search(line)
@@ -147,7 +161,18 @@ def findTestfileTestsFor(fpath, lines):
             testPath = os.path.join(srcDirname, relativeTestPath)
 
             report_fn = partial(make_report, 'doctest testfile failed.')
-            #            function            args              kwargs  report fn
+
+            test_spec = {'make_cmd_fn': make_testfile_cmd,
+                         'args': (fpath, testPath),
+                         'kwargs': {},
+                         'report_fn': report_fn,
+                        }
+
+            env_spec_match = env_spec_pattern.search(line)
+            if env_spec_match:
+                test_spec['env'] = env_spec_match.group(1)
+
+            test_specs.append(test_spec)
             tests.append((make_testfile_cmd, (fpath,testPath), dict(), report_fn))
             break
 

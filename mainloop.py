@@ -144,30 +144,19 @@ class EventProcessor(pyinotify.ProcessEvent):
     def process_default(self, event):
         pass #silence output
     def process_IN_MODIFY(self, event):
-        tests = findTestsFor(event.pathname)
+        test_specs = findTestsFor(event.pathname)
         dirName = os.path.dirname(event.pathname)
         Accountant.filesProcessed[dirName] += 1
-        for testTuple in tests:
-            # TODO: REMOVE
-            test_spec = {}
+        for test_spec in test_specs:
             environment = find_environment_for(test_spec)
-            testFn = testTuple[0]
+            testFn = test_spec['make_cmd_fn']
 
-            if len(testTuple) > 1:
-                testArgs = testTuple[1]
-            else:
-                testArgs = ()
+            testArgs = test_spec.get('args', ())
 
-            if len(testTuple) > 2:
-                testKwargs = testTuple[2]
-            else:
-                testKwargs = {}
+            testKwargs = test_spec.get('kwargs', {})
 
-            if len(testTuple) > 3:
-                report_fn = testTuple[3]
-            else:
-                report_fn = lambda x,y: ['report: ' + x[:50] + '...']
-
+            report_fn = test_spec.get('report_fn',
+                                     lambda x,y: ['report: ' + x[:50] + '...'])
             try:
                 with environment() as env:
                     output, errput = env.run(testFn, *testArgs, **testKwargs)

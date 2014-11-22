@@ -99,6 +99,7 @@ def findTestfileTestsFor(fpath, lines):
     []
     '''
     tests = []
+    test_specs = []
 
     for line in lines:
         match = testfilePattern.search(line)
@@ -110,6 +111,12 @@ def findTestfileTestsFor(fpath, lines):
             print 'found testfile pattern', line
             #            function     args              kwargs  report fn
             tests.append((testfileFn, (fpath,testPath), dict(), make_report))
+            test_specs.append({
+                'make_cmd_fn': testfileFn,
+                'args': (fpath, testPath),
+                'kwargs': {},
+                'report_fn': make_report,
+            })
             break
         match = testfileShortPattern.search(line)
         if match:
@@ -121,10 +128,15 @@ def findTestfileTestsFor(fpath, lines):
             print 'found testfile pattern', line
             #            function     args              kwargs  report fn
             tests.append((testfileFn, (fpath,testPath), dict(), make_report))
+            test_specs.append({
+                'make_cmd_fn': testfileFn,
+                'args': (fpath, testPath),
+                'kwargs': {},
+                'report_fn': make_report,
+            })
             break
 
-
-    return tests
+    return test_specs
 
 
 def main():

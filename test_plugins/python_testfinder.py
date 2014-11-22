@@ -48,33 +48,38 @@ def findTestsFor(fpath):
         fileSize = os.path.getsize(fpath)
     except OSError, ex:
         log_error('could not get file size', fpath, ex)
-        return tests
+        return []
 
     if fileSize > 100*1024: #bigger than 100KiB
         log_error('file too big', fpath)
-        return tests
+        return []
     try:
         fp = file(fpath)
     except Exception, ex:
         log_error('could not open', fpath, ex)
-        return tests
+        return []
     contents = fp.read()
     lines = contents.splitlines()
     if not lines:
         log_error('empty file', fpath)
-        return tests
+        return []
 
     firstline = lines[0]
     fp.close()
 
     if not (fpath.endswith('.py')
         or (firstline.startswith('#!') and 'python' in firstline)):
-        return tests
+        return []
 
     report_fn = partial(make_report, fpath)
     tests.append((pylintTestFn, (fpath,), dict(), report_fn))
+    return [{
+        'make_cmd_fn': pylintTestFn,
+        'args': (fpath,),
+        'kwargs': {},
+        'report_fn': report_fn,
+    }]
 
-    return tests
 
 
 def main():
