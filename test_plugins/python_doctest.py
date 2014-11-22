@@ -121,7 +121,7 @@ def findDoctestsFor(fpath, lines):
     for line in lines:
         if simpleDoctestPattern.search(line):
             #print 'found doctest pattern', line
-            report_fn = partial(make_report, fpath, 'doctest failed')
+            report_fn = partial(make_report, fpath, 'doctest failed.')
             #            function           args     kwargs   report fn
             tests.append((make_doctest_cmd, (fpath,), dict(), report_fn))
             break
@@ -146,7 +146,7 @@ def findTestfileTestsFor(fpath, lines):
             srcDirname = os.path.dirname(fpath)
             testPath = os.path.join(srcDirname, relativeTestPath)
 
-            report_fn = partial(make_report, 'doctest testfile failed')
+            report_fn = partial(make_report, 'doctest testfile failed.')
             #            function            args              kwargs  report fn
             tests.append((make_testfile_cmd, (fpath,testPath), dict(), report_fn))
             break
