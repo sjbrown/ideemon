@@ -35,11 +35,10 @@ def make_report(fpath, output, errput):
             errors.append( (fpath, lineNum, summary) )
     return errors
 
-def findTestsFor(fpath):
-    '''Find tests for python files. Should return at least a pylint
-    test.
+def find_tests_for(fpath):
+    '''Find tests for python files. Should return at least a pylint test.
 
-    >>> findTestsFor('/dev/null')
+    >>> find_tests_for('/dev/null')
     []
     '''
     tests = []
@@ -85,12 +84,12 @@ def findTestsFor(fpath):
 def main():
     os_py = os.__file__.replace('pyc', 'py')
     print os_py
-    for t in findTestsFor(os_py):
+    for t in find_tests_for(os_py):
         print t
 
     thismodule_py = __file__.replace('pyc', 'py')
     print thismodule_py
-    for t in findTestsFor(thismodule_py):
+    for t in find_tests_for(thismodule_py):
         print t
 
 if __name__ == '__main__':

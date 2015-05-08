@@ -7,18 +7,18 @@ import re
 import sys
 import doctest
 
+from .autotest_comment_parser import parse
+
 from functools import partial
 
 __plugin_version = (1,0)
 
 def log_error(*args):
-    msg = ' '.join([str(x) for x in args]) + '\n'
+    msg = ' doctest ' + ' '.join([str(x) for x in args]) + '\n'
     sys.stderr.write(msg)
 
 # pattern to match lines like: # autotest: doctest
 prefix = r'^\s*#\s*autotest\s*:\s*'
-simpleDoctestPattern = re.compile(prefix + r'doctest\b',
-                                  re.IGNORECASE)
 # pattern to match lines like: # autotest: doctest.testfile:test/foo.doctest
 testfilePattern = re.compile(prefix + r'doctest\.testfile\s*:(.*)',
                                   re.IGNORECASE)
@@ -73,11 +73,11 @@ def make_report(fpath, msg, output, errput):
     return errors
 
 
-def findTestsFor(fpath):
+def find_tests_for(fpath):
     '''Find tests for python files. Returns a doctest test if the
     file has a comment line that looks like "# autotest: doctest"
 
-    >>> findTestsFor('/dev/null')
+    >>> find_tests_for('/dev/null')
     []
 
     '''
@@ -122,7 +122,11 @@ def findDoctestsFor(fpath, lines):
     test_specs = []
 
     for line in lines:
-        if simpleDoctestPattern.search(line):
+        found_autotest = parse(line)
+        if not found_autotest:
+            continue
+        args, kwargs = found_autotest
+        if 'doctest' in args:
             report_fn = partial(make_report, fpath, 'doctest failed.')
 
             test_spec = {'make_cmd_fn': make_doctest_cmd,
@@ -153,10 +157,13 @@ def findTestfileTestsFor(fpath, lines):
     test_specs = []
 
     for line in lines:
-        match = testfilePattern.search(line)
-        if match:
+        found_autotest = parse(line)
+        if not found_autotest:
+            continue
+        args, kwargs = found_autotest
+        relativeTestPath = kwargs.get('doctest.testfile')
+        if relativeTestPath:
             #print 'found testfile pattern', line
-            relativeTestPath = match.group(1).strip()
             srcDirname = os.path.dirname(fpath)
             testPath = os.path.join(srcDirname, relativeTestPath)
 
@@ -182,12 +189,12 @@ def findTestfileTestsFor(fpath, lines):
 def main():
     os_py = os.__file__.replace('pyc', 'py')
     print os_py
-    for t in findTestsFor(os_py):
+    for t in find_tests_for(os_py):
         print t
 
     thismodule_py = __file__.replace('pyc', 'py')
     print thismodule_py
-    for t in findTestsFor(thismodule_py):
+    for t in find_tests_for(thismodule_py):
         print t
 
 if __name__ == '__main__':

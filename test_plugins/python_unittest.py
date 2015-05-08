@@ -1,4 +1,10 @@
 #! /usr/bin/python
+'''
+Looks for comment lines like this:
+    autotest: unittest.testfile : xxxxxxx
+or:
+    autotest: unittest
+'''
 
 # autotest: doctest
 # autotest: unittest.testfile:tests/test_python_unittest.py
@@ -6,19 +12,15 @@
 import os
 import re
 import sys
+from .autotest_comment_parser import parse
+
 
 __plugin_version = (1,0)
 
+
 def log_error(*args):
-    msg = ' '.join([str(x) for x in args]) + '\n'
+    msg = ' unittest ' + ' '.join([str(x) for x in args]) + '\n'
     sys.stderr.write(msg)
-
-prefix = r'^\s*#\s*autotest\s*:\s*'
-
-# pattern to match lines like: # autotest: unittest.testfile:tests/test_me.py
-testfilePattern = re.compile(prefix + r'unittest\.testfile\s*:(.*)',
-                             re.IGNORECASE)
-testfileShortPattern = re.compile(prefix + r'unittest')
 
 unittestErrorPattern = re.compile('File .*/([^/]+\.py)", line (\d+)')
 
@@ -54,11 +56,11 @@ def make_report(output, errput):
     return errors
 
 
-def findTestsFor(fpath):
+def find_tests_for(fpath):
     '''Find tests for python files. Returns a unittest test if the
     file has a comment line that looks like "# autotest: unittest"
 
-    >>> findTestsFor('/dev/null')
+    >>> find_tests_for('/dev/null')
     []
     '''
     try:
@@ -102,9 +104,12 @@ def findTestfileTestsFor(fpath, lines):
     test_specs = []
 
     for line in lines:
-        match = testfilePattern.search(line)
-        if match:
-            relativeTestPath = match.group(1).strip()
+        found_autotest = parse(line)
+        if not found_autotest:
+            continue
+        args, kwargs = found_autotest
+        relativeTestPath = kwargs.get('unittest.testfile')
+        if relativeTestPath:
             srcDirname = os.path.dirname(fpath)
             testPath = os.path.join(srcDirname, relativeTestPath)
 
@@ -118,8 +123,9 @@ def findTestfileTestsFor(fpath, lines):
                 'report_fn': make_report,
             })
             break
-        match = testfileShortPattern.search(line)
-        if match:
+
+        if 'unittest' in args:
+            # looks for a unit test in the "standard" place
             fname = os.path.split(fpath)[-1]
             relativeTestPath = 'tests/test_' + fname
             srcDirname = os.path.dirname(fpath)
@@ -142,7 +148,7 @@ def findTestfileTestsFor(fpath, lines):
 def main():
     thismodule_py = __file__.replace('pyc', 'py')
     print thismodule_py
-    for t in findTestsFor(thismodule_py):
+    for t in find_tests_for(thismodule_py):
         print t
 
 if __name__ == '__main__':

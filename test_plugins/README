@@ -16,7 +16,7 @@ version for ideemon
 pluginVersion = (1,0)
 
 
-A function called "findTestsFor" that takes one argument: the full
+A function called "find_tests_for" that takes one argument: the full
 path to the file to be tested.  This function must return a 
 (possibly empty) list of tuples.  The tuples each represent a test
 to be run.  This is an important detail; the plugin does not run 
@@ -25,7 +25,7 @@ form ( test_function, args, kwargs ).  The args and kwargs will be
 passed to the test_function in the conventional way,
 test_function( *args, **kwargs )
 
-def findTestsFor(fpath):
+def find_tests_for(fpath):
     ...
     return [ (myTestFn, (arg1, arg2,), {'foo':1, 'bar':2}),
              ... ]

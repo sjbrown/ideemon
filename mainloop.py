@@ -73,16 +73,17 @@ def ignoreFilter(fpath):
         return False
 
 # -----------------------------------------------------------------------------
-def findTestsFor(fpath):
+def find_tests_for(fpath):
     '''
-    >>> findTestsFor('/dev/null')
+    >>> find_tests_for('/dev/null')
     []
     '''
     allTests = []
     if ignoreFilter(fpath):
         return allTests
     for module in getPluginModules(testPluginsDir):
-        allTests += module.findTestsFor(fpath)
+        allTests += module.find_tests_for(fpath)
+        log.info(' -#- got test spec from %s', module)
     return allTests
 
 # -----------------------------------------------------------------------------
@@ -147,10 +148,12 @@ class EventProcessor(pyinotify.ProcessEvent):
     def process_default(self, event):
         pass #silence output
     def process_IN_MODIFY(self, event):
-        test_specs = findTestsFor(event.pathname)
+        log.info(' -#- EVENT: %s', event)
+
         dirName = os.path.dirname(event.pathname)
         Accountant.filesProcessed[dirName] += 1
-        for test_spec in test_specs:
+
+        for test_spec in find_tests_for(event.pathname):
             environment = find_environment_for(test_spec)
             testFn = test_spec['make_cmd_fn']
 
