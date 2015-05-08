@@ -10,7 +10,7 @@ def log_error(*args):
     sys.stderr.write(msg)
 
 
-pluginVersion = (1,0)
+__plugin_version = (1,0)
 
 def find_environment(spec):
     if spec != 'subprocess':
