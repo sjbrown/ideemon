@@ -5,7 +5,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger()
 
-pluginVersion = (1,0)
+__plugin_version = (1,0)
 
 hardcoded_list = '''\
 /a/work/catan

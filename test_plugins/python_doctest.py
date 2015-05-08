@@ -9,7 +9,7 @@ import doctest
 
 from functools import partial
 
-pluginVersion = (1,0)
+__plugin_version = (1,0)
 
 def log_error(*args):
     msg = ' '.join([str(x) for x in args]) + '\n'

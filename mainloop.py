@@ -18,8 +18,8 @@ INTERVAL_SECS = 6
 
 compatibleVersions = [(1,0)]
 THIS_DIR = os.path.dirname(__file__)
-watchPluginsDir = os.path.join(THIS_DIR, 'watch_plugins')
 testPluginsDir = os.path.join(THIS_DIR, 'test_plugins')
+watchPluginsDir = os.path.join(THIS_DIR, 'watch_plugins')
 notifyPluginsDir = os.path.join(THIS_DIR, 'notify_plugins')
 environment_plugins_dir = os.path.join(THIS_DIR, 'environment_plugins')
 
@@ -37,14 +37,15 @@ def getPluginFilePaths(dirPath):
 def getPluginModules(dirPath):
     pluginModules = []
     origPath = sys.path
-    sys.path.insert(0, dirPath) #insert, not append: users can override std modules
+    # insert, not append: users can override std modules
+    sys.path.insert(0, dirPath)
     for fpath in getPluginFilePaths(dirPath):
         dirName = os.path.dirname(fpath)
         baseName = os.path.basename(fpath)
         modName = baseName.rsplit('.py', 1)[0]
         module = __import__(modName, globals(), locals(), level=0)
-        if (hasattr(module, 'pluginVersion')
-            and module.pluginVersion in compatibleVersions):
+        if (hasattr(module, '__plugin_version')
+            and module.__plugin_version in compatibleVersions):
             pluginModules.append(module)
         else:
             log.error('Could not load plugin module %s' % str(module))
@@ -134,7 +135,9 @@ def find_environment_for(test_spec):
     env_spec = test_spec.get('env', 'subprocess')
     all_envs = []
     for module in getPluginModules(environment_plugins_dir):
-        all_envs += [module.find_environment(env_spec)]
+        found = module.find_environment(env_spec)
+        if found:
+            all_envs.append(found)
     if len(all_envs) > 1:
         log.error('MORE THAN ONE ENVIRONMENT FOUND %s', all_envs)
     return all_envs[0]

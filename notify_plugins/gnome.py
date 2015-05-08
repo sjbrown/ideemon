@@ -1,6 +1,6 @@
 #! /usr/bin/python
 
-pluginVersion = (1,0)
+__plugin_version = (1,0)
 
 import os
 import pynotify
