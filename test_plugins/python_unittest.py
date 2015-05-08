@@ -100,7 +100,6 @@ def findTestfileTestsFor(fpath, lines):
     >>> findTestfileTestsFor('/dev/null', [])
     []
     '''
-    tests = []
     test_specs = []
 
     for line in lines:
@@ -108,37 +107,25 @@ def findTestfileTestsFor(fpath, lines):
         if not found_autotest:
             continue
         args, kwargs = found_autotest
-        relativeTestPath = kwargs.get('unittest.testfile')
+
+        if 'unittest' in args:
+            # the unit test is assumed to be in the "standard" place
+            fname = os.path.split(fpath)[-1]
+            relativeTestPath = 'tests/test_' + fname
+        else:
+            relativeTestPath = kwargs.get('unittest.testfile')
+
         if relativeTestPath:
             srcDirname = os.path.dirname(fpath)
             testPath = os.path.join(srcDirname, relativeTestPath)
 
-            print 'found testfile pattern', line
-            #            function     args              kwargs  report fn
-            tests.append((testfileFn, (fpath,testPath), dict(), make_report))
+            #print 'found testfile pattern', line
             test_specs.append({
                 'make_cmd_fn': testfileFn,
                 'args': (fpath, testPath),
                 'kwargs': {},
                 'report_fn': make_report,
-            })
-            break
-
-        if 'unittest' in args:
-            # looks for a unit test in the "standard" place
-            fname = os.path.split(fpath)[-1]
-            relativeTestPath = 'tests/test_' + fname
-            srcDirname = os.path.dirname(fpath)
-
-            testPath = os.path.join(srcDirname, relativeTestPath)
-            print 'found testfile pattern', line
-            #            function     args              kwargs  report fn
-            tests.append((testfileFn, (fpath,testPath), dict(), make_report))
-            test_specs.append({
-                'make_cmd_fn': testfileFn,
-                'args': (fpath, testPath),
-                'kwargs': {},
-                'report_fn': make_report,
+                'env': kwargs.get('env'),
             })
             break
 
