@@ -7,7 +7,7 @@ import re
 import sys
 import doctest
 
-from .autotest_comment_parser import parse
+from ideemon.autotest_comment_parser import parse
 
 from functools import partial
 

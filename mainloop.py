@@ -2,14 +2,12 @@
 
 # autotest: doctest
 
-# TODO: I should investigate using gevent to run subprocesses
-#       in a concurrent manner
-
 import os
 import sys
 import time
 import pyinotify
 import collections
+from functools import partial
 import logging
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger()
@@ -161,11 +159,13 @@ class EventProcessor(pyinotify.ProcessEvent):
 
             testKwargs = test_spec.get('kwargs', {})
 
+            testFn = partial(testFn, *testArgs, **testKwargs)
+
             report_fn = test_spec.get('report_fn',
                                      lambda x,y: ['report: ' + x[:50] + '...'])
             try:
                 with environment() as env:
-                    output, errput = env.run(testFn, *testArgs, **testKwargs)
+                    output, errput = env.run(testFn, test_spec)
                     report = report_fn(output, errput)
                     notify(report)
             except Exception, ex:

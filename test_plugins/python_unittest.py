@@ -12,7 +12,7 @@ or:
 import os
 import re
 import sys
-from .autotest_comment_parser import parse
+from ideemon.autotest_comment_parser import parse
 
 
 __plugin_version = (1,0)
@@ -22,38 +22,72 @@ def log_error(*args):
     msg = ' unittest ' + ' '.join([str(x) for x in args]) + '\n'
     sys.stderr.write(msg)
 
-unittestErrorPattern = re.compile('File .*/([^/]+\.py)", line (\d+)')
+tb_begin_pattern = 'Traceback (most recent call last):'
+unittest_error_pattern = re.compile('File .*/([^/]+\.py)", line (\d+)')
 
 
 def testfileFn(srcPath, testPath, **kwargs):
-    '''run the unittest file
-    If there are no errors, return None
-    If there are errors, return a list of (filepath, lineNumber, errorSummary)
-    '''
     srcDirname = os.path.dirname(srcPath)
 
-    cmd = 'python '+ testPath
+    cmd = 'python %s' % testPath
     return cmd
 
 
 def make_report(output, errput):
+    '''
+    "errput" is usually something like this:
+
+     E
+     ======================================================================
+     ERROR: test_foo (__main__.SomeTestClass)
+     ----------------------------------------------------------------------
+     Traceback (most recent call last):
+       File "/python/dist-packages/tornado/testing.py", line 120, in __call__
+         result = self.orig_method(*args, **kwargs)
+       File "/python/dist-packages/mock.py", line 1190, in patched
+         return func(*args, **keywargs)
+       File "/home/user/project/tests/foo.py", line 74, in test_foo
+         ret = handler.foo(bazbar).result()
+       File "/python/dist-packages/tornado/concurrent.py", line 209, in result
+         raise_exc_info(self._exc_info)
+       File "/python/dist-packages/tornado/gen.py", line 212, in wrapper
+         yielded = next(result)
+       File "/home/user/project/foo.py", line 160, in foo
+         l = [a for (a,b) in some_pairs]
+     ValueError: too many values to unpack
+     
+     ----------------------------------------------------------------------
+     Ran 1 test in 0.143s
+
+
+    If there are no errors, return []
+    If there are errors, return a list of (filepath, lineNumber, errorSummary)
+    '''
     errors = []
-    lines = iter(errput.splitlines())
+    lines = errput.splitlines()
+    stack = []
 
-    print 'lines:\n', '\n'.join(errput.splitlines())
+    #print 'lines:\n', '\n'.join(errput.splitlines())
 
-    for line in lines:
-        print line
-        m = unittestErrorPattern.search(line)
+    tb_begun = False
+    for i, line in enumerate(lines):
+        if not tb_begun and line.strip() != tb_begin_pattern:
+            #print 'S ', line
+            continue
+        tb_begun = True
+        #print line
+
+        m = unittest_error_pattern.search(line)
         if m:
             testFileName = m.group(1)
             lineNum = m.group(2)
-            detail = lines.next().strip()
-            detail += '\n' + lines.next().strip()
+            detail = lines[i+1].strip()
+            detail += '\n' + lines[i+2].strip()
             errors.append((testFileName, lineNum, detail))
-            break
 
-    return errors
+    #print 'E', errors
+    # We want the LAST line that matches
+    return errors[-1:]
 
 
 def find_tests_for(fpath):

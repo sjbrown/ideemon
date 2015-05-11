@@ -9,10 +9,10 @@ API:
 
 plugins must have the following:
 
-A module-level attribute "pluginVersion" that has a compatible
+A module-level attribute "__plugin_version" that has a compatible
 version for ideemon
 
-pluginVersion = (1,0)
+__plugin_version = (1,0)
 
 
 A function called "directoriesToWatch" that returns a (possibly

@@ -24,8 +24,8 @@ class SubprocessEnvironment(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         return False
 
-    def run(self, test_fn, *args, **kwargs):
-        cmd = test_fn(*args, **kwargs)
+    def run(self, test_fn, test_spec):
+        cmd = test_fn()
         log_error('')
         log_error('cmd', cmd)
 
