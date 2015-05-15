@@ -25,7 +25,10 @@ testfilePattern = re.compile(prefix + r'doctest\.testfile\s*:(.*)',
 
 env_spec_pattern = re.compile(r'env:(.+)\b', re.IGNORECASE)
 
-doctestErrorPattern = re.compile(r'^File .*line (\d+),')
+tb_begin_pattern = 'Traceback (most recent call last):'
+
+doctestErrorPattern = re.compile(r'File .*line (\d+),')
+file_error_pattern = re.compile('File .*/([^/]+\.py)", line (\d+)')
 
 
 def make_doctest_cmd(fpath, **kwargs):
@@ -55,8 +58,59 @@ def make_testfile_cmd(srcPath, testPath, **kwargs):
     return cmd
 
 
+
+def scrape_traceback(lines):
+    '''
+    "lines" should be something like this:
+
+     Traceback (most recent call last):
+       File "/python/dist-packages/tornado/testing.py", line 120, in __call__
+         result = self.orig_method(*args, **kwargs)
+       File "/python/dist-packages/mock.py", line 1190, in patched
+         return func(*args, **keywargs)
+       File "/home/user/project/tests/foo.py", line 74, in test_foo
+         ret = handler.foo(bazbar).result()
+       File "/python/dist-packages/tornado/concurrent.py", line 209, in result
+         raise_exc_info(self._exc_info)
+       File "/python/dist-packages/tornado/gen.py", line 212, in wrapper
+         yielded = next(result)
+       File "/home/user/project/foo.py", line 160, in foo
+         l = [a for (a,b) in some_pairs]
+     ValueError: too many values to unpack
+     
+     ----------------------------------------------------------------------
+     Ran 1 test in 0.143s
+
+
+    If there are no errors, return []
+    If there are errors, return the last (filepath, lineNumber, errorSummary)
+    '''
+    errors = []
+    tb_begun = False
+    for i, line in enumerate(lines):
+        if not tb_begun and line.strip() != tb_begin_pattern:
+            continue
+        tb_begun = True
+
+        m = file_error_pattern.search(line)
+        if m:
+            testFileName = m.group(1)
+            lineNum = m.group(2)
+            detail = lines[i+1].strip()
+            detail += '\n' + lines[i+2].strip()
+            errors.append((testFileName, lineNum, detail))
+
+    # We want the LAST line that matches
+    return errors[-1:]
+
 def make_report(fpath, msg, output, errput):
-    lines = iter(output.splitlines())
+    lines = output.splitlines()
+
+    tb_errors = scrape_traceback(lines)
+    if tb_errors:
+        return tb_errors
+
+    lines = iter(lines)
     errors = []
     for line in lines:
         m = doctestErrorPattern.search(line)
